@@ -10,7 +10,7 @@ long mem_size = 4000L*1000*1000;
 // The number of memory copies in a thread.
 // It seems if we have more than one memory copies, the O3 optimization may do something
 // to remove some of the copies.
-int num_copies = 1;
+int num_copies = 10;
 // The number of threads should be the same as the number of physical cores.
 int num_threads = 16;
 
@@ -59,7 +59,6 @@ void rand_copy_mem(double &throughput)
 	auto start = std::chrono::system_clock::now();
 	for (int i = 0; i < num_copies; i++) {
 		for (size_t i = 0; i < offsets.size(); i++) {
-			assert(offsets[i] * stride < mem_size);
 			memcpy(dst + i * stride, src + offsets[i] * stride, stride);
 		}
 	}
