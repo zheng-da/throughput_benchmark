@@ -44,9 +44,11 @@ void seq_copy_mem(double &throughput)
 std::vector<long> offsets;
 int stride = 400;
 
-void rand_copy_mem(double &throughput)
+void rand_copy_mem(int thread_id, double &throughput)
 {
-	long copy_size = offsets.size() * stride;
+	long num_offsets = offsets.size() / num_threads;
+	long copy_size = num_offsets * stride;
+	const long *offset_start = &offsets[thread_id * num_offsets];
 	char *src = (char *) malloc(mem_size);
 	char *dst = (char *) malloc(copy_size);
 	memset(src, 0, mem_size);
@@ -58,8 +60,8 @@ void rand_copy_mem(double &throughput)
 	
 	auto start = std::chrono::system_clock::now();
 	for (int i = 0; i < num_copies; i++) {
-		for (size_t i = 0; i < offsets.size(); i++) {
-			memcpy(dst + i * stride, src + offsets[i] * stride, stride);
+		for (size_t i = 0; i < num_offsets; i++) {
+			memcpy(dst + i * stride, src + offset_start[i] * stride, stride);
 		}
 	}
 	auto end = std::chrono::system_clock::now();
@@ -92,12 +94,12 @@ int main()
 	// Calculate the total number of strides in the memory.
 	size_t num_strides = mem_size / stride;
 	// Calculate the location of the strides that we want to copy.
-	offsets.resize(num_strides / 2);
+	offsets.resize(num_strides / 2 * num_threads);
 	for (size_t i = 0; i < offsets.size(); i++) {
 		offsets[i] = rand() % num_strides;
 	}
 	for (int i = 0; i < num_threads; i++) {
-		threads[i] = new std::thread(rand_copy_mem, std::ref(throughputs[i]));
+		threads[i] = new std::thread(rand_copy_mem, i, std::ref(throughputs[i]));
 	}
 	throughput = 0;
 	for (int i = 0; i < num_threads; i++) {
