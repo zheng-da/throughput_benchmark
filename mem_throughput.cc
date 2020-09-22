@@ -16,6 +16,18 @@ int num_threads = 16;
 
 auto start0 = std::chrono::system_clock::now();
 
+void memcpy1(void *dst, void *src, size_t size) {
+	assert(((long) src) % sizeof(long) == 0);
+	assert(((long) dst) % sizeof(long) == 0);
+	assert(size % sizeof(long) == 0);
+	long *dst1 = (long *) dst;
+	long *src1 = (long *) src;
+#pragma simd
+	for (size_t i = 0; i < size / sizeof(long); i++) {
+		dst1[i] = src1[i];
+	}
+}
+
 void seq_copy_mem(double &throughput)
 {
 	char *src = (char *) malloc(mem_size);
@@ -29,7 +41,7 @@ void seq_copy_mem(double &throughput)
 	
 	auto start = std::chrono::system_clock::now();
 	for (int i = 0; i < num_copies; i++) {
-		memcpy(dst, src, mem_size);
+		memcpy1(dst, src, mem_size);
 	}
 	auto end = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
@@ -61,7 +73,7 @@ void rand_copy_mem(int thread_id, double &throughput)
 	auto start = std::chrono::system_clock::now();
 	for (int i = 0; i < num_copies; i++) {
 		for (size_t i = 0; i < num_offsets; i++) {
-			memcpy(dst + i * stride, src + offset_start[i] * stride, stride);
+			memcpy1(dst + i * stride, src + offset_start[i] * stride, stride);
 		}
 	}
 	auto end = std::chrono::system_clock::now();
